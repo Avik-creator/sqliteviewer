@@ -8,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
-import { Input } from '@/components/ui/input';
+
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Upload, Play, ChevronLeft, ChevronRight} from 'lucide-react';
 // @ts-ignore
@@ -32,6 +32,34 @@ export default function SQLiteViewer() {
   const [fileName, setFileName] = useState<string>('');
   const [fileSize, setFileSize] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+
+  const handleOnLoadExample = async () => {
+    try {
+      const SQL = await initSqlJs({
+        locateFile: () => sqlWasmUrl
+      });
+  
+      const response = await fetch('/Example.sqlite');
+      const arrayBuffer = await response.arrayBuffer();
+      const uint8Array = new Uint8Array(arrayBuffer);
+      const newDb = new SQL.Database(uint8Array);
+      
+      setFileName('Example.sqlite');
+      setFileSize(`(${(arrayBuffer.byteLength / (1024 * 1024)).toFixed(2)} MB)`);
+      setDb(newDb);
+      const tableInfo = getTables(newDb);
+      setTables(tableInfo);
+      if (tableInfo.length > 0) {
+        setSelectedTable(tableInfo[0].name);
+        loadTableData(tableInfo[0].name, newDb);
+    }
+    } catch (error) {
+      console.error('Error loading example database:', error);
+      setQueryError('Error loading example database. Please try again.');
+    }
+  };
+  
 
   useEffect(() => {
     document.documentElement.classList.add('dark');
@@ -122,12 +150,7 @@ export default function SQLiteViewer() {
     loadTableData(tableName);
   };
 
-  const handleFilterChange = (column: string, value: string) => {
-    const newFilters = { ...filters, [column]: value };
-    setFilters(newFilters);
-    setPage(1);
-    loadTableData(selectedTable);
-  };
+  
 
   useEffect(() => {
     if (selectedTable) {
@@ -145,8 +168,16 @@ export default function SQLiteViewer() {
                 {fileName} <span className="text-gray-400">{fileSize}</span>
               </h1>
             )}
+
+
           </div>
-          
+          <Button 
+        variant="secondary" 
+        onClick={handleOnLoadExample}
+        className="w-auto"
+      >
+        Load Example Database
+      </Button>
         </div>
 
         {!db ? (
@@ -166,6 +197,7 @@ export default function SQLiteViewer() {
               >
                 <Upload className="mr-2 w-4 h-4" /> Upload SQLite Database
               </Button>
+              
             </CardContent>
           </Card>
         ) : (
@@ -198,12 +230,7 @@ export default function SQLiteViewer() {
                               <TableHead key={idx} className="text-gray-400">
                                 <div className="space-y-2">
                                   <div>{column}</div>
-                                  <Input
-                                    placeholder="Filter"
-                                    className="h-8 bg-transparent border-gray-800"
-                                    value={filters[column] || ''}
-                                    onChange={(e) => handleFilterChange(column, e.target.value)}
-                                  />
+                                  
                                 </div>
                               </TableHead>
                             ))}
