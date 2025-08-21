@@ -106,11 +106,31 @@ const ChartTooltipContent = React.forwardRef<
   HTMLDivElement,
   React.ComponentProps<typeof RechartsPrimitive.Tooltip> &
     React.ComponentProps<"div"> & {
+      active?: boolean;
+      payload?: Array<{
+        dataKey?: string;
+        name?: string;
+        value?: number | string;
+        color?: string;
+        payload?: Record<string, unknown>;
+        fill?: string;
+      }>;
+      label?: string;
       hideLabel?: boolean;
       hideIndicator?: boolean;
       indicator?: "line" | "dot" | "dashed";
       nameKey?: string;
       labelKey?: string;
+      labelFormatter?: (value: unknown, payload: unknown[]) => React.ReactNode;
+      formatter?: (
+        value: unknown,
+        name: string,
+        props: unknown,
+        index: number,
+        payload: unknown
+      ) => React.ReactNode;
+      labelClassName?: string;
+      color?: string;
     }
 >(
   (
@@ -188,7 +208,7 @@ const ChartTooltipContent = React.forwardRef<
           {payload.map((item, index) => {
             const key = `${nameKey || item.name || item.dataKey || "value"}`;
             const itemConfig = getPayloadConfigFromPayload(config, item, key);
-            const indicatorColor = color || item.payload.fill || item.color;
+            const indicatorColor = color || item.payload?.fill || item.color;
 
             return (
               <div
@@ -240,7 +260,9 @@ const ChartTooltipContent = React.forwardRef<
                       </div>
                       {item.value && (
                         <span className="font-mono font-medium tabular-nums text-foreground">
-                          {item.value.toLocaleString()}
+                          {typeof item.value === "number"
+                            ? item.value.toLocaleString()
+                            : String(item.value)}
                         </span>
                       )}
                     </div>
