@@ -3,7 +3,7 @@
 "use client";
 
 import type React from "react";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
@@ -210,24 +210,27 @@ export default function DatabaseViewer() {
     }
   };
 
-  const loadTableData = async (tableName: string, adapter = currentAdapter) => {
-    if (!adapter) return;
+  const loadTableData = useCallback(
+    async (tableName: string, adapter = currentAdapter) => {
+      if (!adapter) return;
 
-    setIsLoading(true);
-    try {
-      const query = `SELECT * FROM ${tableName} LIMIT 10 OFFSET ${
-        (page - 1) * 10
-      }`;
-      const results = await adapter.executeQuery(query);
-      setQueryResults(results);
-      setQueryError(null);
-    } catch (error: any) {
-      setQueryError(error.message);
-      setQueryResults(null);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+      setIsLoading(true);
+      try {
+        const query = `SELECT * FROM ${tableName} LIMIT 10 OFFSET ${
+          (page - 1) * 10
+        }`;
+        const results = await adapter.executeQuery(query);
+        setQueryResults(results);
+        setQueryError(null);
+      } catch (error: any) {
+        setQueryError(error.message);
+        setQueryResults(null);
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [currentAdapter, page]
+  );
 
   const executeQuery = async () => {
     if (!currentAdapter) {
@@ -263,17 +266,11 @@ export default function DatabaseViewer() {
     setPage(newPage);
   };
 
-  const handleRefreshData = () => {
-    if (selectedTable) {
-      loadTableData(selectedTable);
-    }
-  };
-
   useEffect(() => {
     if (selectedTable && currentAdapter) {
       loadTableData(selectedTable);
     }
-  }, [page]);
+  }, [page, selectedTable, currentAdapter, loadTableData]);
 
   const getConnectionTypeBadge = (type: string) => {
     const colors = {
@@ -436,7 +433,7 @@ export default function DatabaseViewer() {
               isLoading={isLoading}
               page={page}
               onPageChange={handlePageChange}
-              onRefresh={handleRefreshData}
+              // ...existing code...
             />
 
             {/* Query Execution */}

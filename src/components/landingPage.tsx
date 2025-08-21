@@ -10,22 +10,19 @@ import {
   Download,
   ArrowRight,
   CheckCircle,
-  type LightbulbIcon as LucideProps,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
-import type { ForwardRefExoticComponent, RefAttributes } from "react";
+import type { LucideIcon } from "lucide-react";
 
 const FeatureCard = ({
   icon: Icon,
   title,
   description,
 }: {
-  icon: ForwardRefExoticComponent<
-    Omit<typeof LucideProps, "ref"> & RefAttributes<SVGSVGElement>
-  >;
+  icon: LucideIcon;
   title: string;
   description: string;
 }) => (
