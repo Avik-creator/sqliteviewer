@@ -3,7 +3,6 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import initSqlJs from 'sql.js';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -36,6 +35,11 @@ export default function SQLiteViewer() {
 
   const handleOnLoadExample = async () => {
     try {
+      // Dynamic import to avoid fs module issues
+      const { default: initSqlJs } = await import('sql.js');
+      // @ts-ignore - WASM file import
+      const sqlWasmUrl = (await import('sql.js/dist/sql-wasm.wasm')).default;
+      
       const SQL = await initSqlJs({
         locateFile: () => sqlWasmUrl
       });
@@ -83,6 +87,11 @@ export default function SQLiteViewer() {
     if (!file) return;
 
     try {
+      // Dynamic import to avoid fs module issues
+      const { default: initSqlJs } = await import('sql.js');
+      // @ts-ignore - WASM file import
+      const sqlWasmUrl = (await import('sql.js/dist/sql-wasm.wasm')).default;
+      
       const SQL = await initSqlJs({
         locateFile: () => sqlWasmUrl
       });
@@ -309,4 +318,3 @@ export default function SQLiteViewer() {
     </div>
   );
 }
-

@@ -1,11 +1,5 @@
-import SQLiteViewer from "@/components/sqliteComponent";
-
+import DatabaseViewer from "@/components/databaseViewer"
 
 export default function EditorPage() {
-  return (
-    <div className="min-h-screen bg-[#0a0b0f]">
-      <SQLiteViewer />
-    </div>
-  );
+  return <DatabaseViewer />
 }
-
