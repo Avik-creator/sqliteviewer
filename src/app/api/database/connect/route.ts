@@ -134,5 +134,3 @@ export async function DELETE() {
     );
   }
 }
-
-export { postgresPool, mysqlPool };
