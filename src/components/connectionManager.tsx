@@ -1,36 +1,57 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Badge } from "@/components/ui/badge"
-import { Database, Plus, Trash2, TestTube, CheckCircle, XCircle } from "lucide-react"
+import { useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
+import {
+  Database,
+  Plus,
+  Trash2,
+  TestTube,
+  CheckCircle,
+  XCircle,
+} from "lucide-react";
 
 export interface DatabaseConnection {
-  id: string
-  name: string
-  type: "postgresql" | "mysql" | "sqlite"
-  connectionString: string
-  host?: string
-  port?: number
-  database?: string
-  username?: string
-  password?: string
-  isConnected: boolean
-  lastTested?: Date
+  id: string;
+  name: string;
+  type: "postgresql" | "mysql" | "sqlite";
+  connectionString: string;
+  host?: string;
+  port?: number;
+  database?: string;
+  username?: string;
+  password?: string;
+  isConnected: boolean;
+  lastTested?: Date;
 }
 
 interface ConnectionManagerProps {
-  connections: DatabaseConnection[]
-  onAddConnection: (connection: Omit<DatabaseConnection, "id" | "isConnected" | "lastTested">) => void
-  onDeleteConnection: (id: string) => void
-  onTestConnection: (id: string) => Promise<boolean>
-  onSelectConnection: (connection: DatabaseConnection) => void
-  selectedConnectionId?: string
+  connections: DatabaseConnection[];
+  onAddConnection: (
+    connection: Omit<DatabaseConnection, "id" | "isConnected" | "lastTested">
+  ) => void;
+  onDeleteConnection: (id: string) => void;
+  onTestConnection: (id: string) => Promise<boolean>;
+  onSelectConnection: (connection: DatabaseConnection) => void;
+  selectedConnectionId?: string;
 }
 
 export default function ConnectionManager({
@@ -41,29 +62,45 @@ export default function ConnectionManager({
   onSelectConnection,
   selectedConnectionId,
 }: ConnectionManagerProps) {
-  const [isDialogOpen, setIsDialogOpen] = useState(false)
-  const [newConnection, setNewConnection] = useState({
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [newConnection, setNewConnection] = useState<{
+    name: string;
+    type: "postgresql" | "mysql" | "sqlite";
+    connectionString: string;
+    host: string;
+    port: number;
+    database: string;
+    username: string;
+    password: string;
+  }>({
     name: "",
-    type: "postgresql" as const,
+    type: "postgresql",
     connectionString: "",
     host: "",
     port: 5432,
     database: "",
     username: "",
     password: "",
-  })
-  const [useConnectionString, setUseConnectionString] = useState(true)
-  const [testingConnections, setTestingConnections] = useState<Set<string>>(new Set())
+  });
+  const [useConnectionString, setUseConnectionString] = useState(true);
+  const [testingConnections, setTestingConnections] = useState<Set<string>>(
+    new Set()
+  );
 
   const handleAddConnection = () => {
-    if (!newConnection.name || (!useConnectionString && (!newConnection.host || !newConnection.database))) {
-      return
+    if (
+      !newConnection.name ||
+      (!useConnectionString && (!newConnection.host || !newConnection.database))
+    ) {
+      return;
     }
 
     onAddConnection({
       ...newConnection,
-      connectionString: useConnectionString ? newConnection.connectionString : buildConnectionString(newConnection),
-    })
+      connectionString: useConnectionString
+        ? newConnection.connectionString
+        : buildConnectionString(newConnection),
+    });
 
     // Reset form
     setNewConnection({
@@ -75,48 +112,48 @@ export default function ConnectionManager({
       database: "",
       username: "",
       password: "",
-    })
-    setIsDialogOpen(false)
-  }
+    });
+    setIsDialogOpen(false);
+  };
 
   const buildConnectionString = (conn: typeof newConnection) => {
     switch (conn.type) {
       case "postgresql":
-        return `postgresql://${conn.username}:${conn.password}@${conn.host}:${conn.port}/${conn.database}`
+        return `postgresql://${conn.username}:${conn.password}@${conn.host}:${conn.port}/${conn.database}`;
       case "mysql":
-        return `mysql://${conn.username}:${conn.password}@${conn.host}:${conn.port}/${conn.database}`
+        return `mysql://${conn.username}:${conn.password}@${conn.host}:${conn.port}/${conn.database}`;
       case "sqlite":
-        return `sqlite://${conn.database}`
+        return `sqlite://${conn.database}`;
       default:
-        return ""
+        return "";
     }
-  }
+  };
 
   const handleTestConnection = async (id: string) => {
-    setTestingConnections((prev) => new Set(prev).add(id))
+    setTestingConnections((prev) => new Set(prev).add(id));
     try {
-      await onTestConnection(id)
+      await onTestConnection(id);
     } finally {
       setTestingConnections((prev) => {
-        const newSet = new Set(prev)
-        newSet.delete(id)
-        return newSet
-      })
+        const newSet = new Set(prev);
+        newSet.delete(id);
+        return newSet;
+      });
     }
-  }
+  };
 
   const getTypeColor = (type: string) => {
     switch (type) {
       case "postgresql":
-        return "bg-blue-500/10 text-blue-500 border-blue-500/20"
+        return "bg-blue-500/10 text-blue-500 border-blue-500/20";
       case "mysql":
-        return "bg-orange-500/10 text-orange-500 border-orange-500/20"
+        return "bg-orange-500/10 text-orange-500 border-orange-500/20";
       case "sqlite":
-        return "bg-green-500/10 text-green-500 border-green-500/20"
+        return "bg-green-500/10 text-green-500 border-green-500/20";
       default:
-        return "bg-gray-500/10 text-gray-500 border-gray-500/20"
+        return "bg-gray-500/10 text-gray-500 border-gray-500/20";
     }
-  }
+  };
 
   return (
     <div className="space-y-4">
@@ -131,7 +168,9 @@ export default function ConnectionManager({
           </DialogTrigger>
           <DialogContent className="max-w-md">
             <DialogHeader>
-              <DialogTitle className="font-serif">Add Database Connection</DialogTitle>
+              <DialogTitle className="font-serif">
+                Add Database Connection
+              </DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
               <div className="space-y-2">
@@ -139,7 +178,12 @@ export default function ConnectionManager({
                 <Input
                   id="name"
                   value={newConnection.name}
-                  onChange={(e) => setNewConnection((prev) => ({ ...prev, name: e.target.value }))}
+                  onChange={(e) =>
+                    setNewConnection((prev) => ({
+                      ...prev,
+                      name: e.target.value,
+                    }))
+                  }
                   placeholder="My Database"
                 />
               </div>
@@ -152,7 +196,12 @@ export default function ConnectionManager({
                     setNewConnection((prev) => ({
                       ...prev,
                       type: value,
-                      port: value === "postgresql" ? 5432 : value === "mysql" ? 3306 : 0,
+                      port:
+                        value === "postgresql"
+                          ? 5432
+                          : value === "mysql"
+                          ? 3306
+                          : 0,
                     }))
                   }
                 >
@@ -175,7 +224,9 @@ export default function ConnectionManager({
                   onChange={(e) => setUseConnectionString(e.target.checked)}
                   className="rounded"
                 />
-                <Label htmlFor="useConnectionString">Use connection string</Label>
+                <Label htmlFor="useConnectionString">
+                  Use connection string
+                </Label>
               </div>
 
               {useConnectionString ? (
@@ -184,7 +235,12 @@ export default function ConnectionManager({
                   <Input
                     id="connectionString"
                     value={newConnection.connectionString}
-                    onChange={(e) => setNewConnection((prev) => ({ ...prev, connectionString: e.target.value }))}
+                    onChange={(e) =>
+                      setNewConnection((prev) => ({
+                        ...prev,
+                        connectionString: e.target.value,
+                      }))
+                    }
                     placeholder="postgresql://user:pass@host:5432/dbname"
                   />
                 </div>
@@ -196,7 +252,12 @@ export default function ConnectionManager({
                       <Input
                         id="host"
                         value={newConnection.host}
-                        onChange={(e) => setNewConnection((prev) => ({ ...prev, host: e.target.value }))}
+                        onChange={(e) =>
+                          setNewConnection((prev) => ({
+                            ...prev,
+                            host: e.target.value,
+                          }))
+                        }
                         placeholder="localhost"
                       />
                     </div>
@@ -207,7 +268,10 @@ export default function ConnectionManager({
                         type="number"
                         value={newConnection.port}
                         onChange={(e) =>
-                          setNewConnection((prev) => ({ ...prev, port: Number.parseInt(e.target.value) }))
+                          setNewConnection((prev) => ({
+                            ...prev,
+                            port: Number.parseInt(e.target.value),
+                          }))
                         }
                       />
                     </div>
@@ -217,7 +281,12 @@ export default function ConnectionManager({
                     <Input
                       id="database"
                       value={newConnection.database}
-                      onChange={(e) => setNewConnection((prev) => ({ ...prev, database: e.target.value }))}
+                      onChange={(e) =>
+                        setNewConnection((prev) => ({
+                          ...prev,
+                          database: e.target.value,
+                        }))
+                      }
                       placeholder="mydb"
                     />
                   </div>
@@ -226,7 +295,12 @@ export default function ConnectionManager({
                     <Input
                       id="username"
                       value={newConnection.username}
-                      onChange={(e) => setNewConnection((prev) => ({ ...prev, username: e.target.value }))}
+                      onChange={(e) =>
+                        setNewConnection((prev) => ({
+                          ...prev,
+                          username: e.target.value,
+                        }))
+                      }
                       placeholder="user"
                     />
                   </div>
@@ -236,7 +310,12 @@ export default function ConnectionManager({
                       id="password"
                       type="password"
                       value={newConnection.password}
-                      onChange={(e) => setNewConnection((prev) => ({ ...prev, password: e.target.value }))}
+                      onChange={(e) =>
+                        setNewConnection((prev) => ({
+                          ...prev,
+                          password: e.target.value,
+                        }))
+                      }
                       placeholder="password"
                     />
                   </div>
@@ -257,7 +336,8 @@ export default function ConnectionManager({
             <CardContent className="flex flex-col items-center justify-center py-8">
               <Database className="w-12 h-12 text-muted-foreground mb-4" />
               <p className="text-muted-foreground text-center">
-                No database connections yet. Add your first connection to get started.
+                No database connections yet. Add your first connection to get
+                started.
               </p>
             </CardContent>
           </Card>
@@ -266,15 +346,21 @@ export default function ConnectionManager({
             <Card
               key={connection.id}
               className={`cursor-pointer transition-all hover:shadow-md ${
-                selectedConnectionId === connection.id ? "ring-2 ring-primary" : ""
+                selectedConnectionId === connection.id
+                  ? "ring-2 ring-primary"
+                  : ""
               }`}
               onClick={() => onSelectConnection(connection)}
             >
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="font-serif text-lg">{connection.name}</CardTitle>
+                  <CardTitle className="font-serif text-lg">
+                    {connection.name}
+                  </CardTitle>
                   <div className="flex items-center gap-2">
-                    <Badge className={getTypeColor(connection.type)}>{connection.type.toUpperCase()}</Badge>
+                    <Badge className={getTypeColor(connection.type)}>
+                      {connection.type.toUpperCase()}
+                    </Badge>
                     {connection.isConnected ? (
                       <CheckCircle className="w-4 h-4 text-green-500" />
                     ) : (
@@ -293,8 +379,8 @@ export default function ConnectionManager({
                       variant="outline"
                       size="sm"
                       onClick={(e) => {
-                        e.stopPropagation()
-                        handleTestConnection(connection.id)
+                        e.stopPropagation();
+                        handleTestConnection(connection.id);
                       }}
                       disabled={testingConnections.has(connection.id)}
                     >
@@ -304,8 +390,8 @@ export default function ConnectionManager({
                       variant="outline"
                       size="sm"
                       onClick={(e) => {
-                        e.stopPropagation()
-                        onDeleteConnection(connection.id)
+                        e.stopPropagation();
+                        onDeleteConnection(connection.id);
                       }}
                     >
                       <Trash2 className="w-4 h-4" />
@@ -323,5 +409,5 @@ export default function ConnectionManager({
         )}
       </div>
     </div>
-  )
+  );
 }

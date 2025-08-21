@@ -41,7 +41,7 @@ interface EnhancedTableViewerProps {
   isLoading: boolean;
   page: number;
   onPageChange: (page: number) => void;
-  onRefresh: () => void;
+  // onRefresh: () => void; // Removed unused prop
 }
 
 type SortDirection = "asc" | "desc" | null;
@@ -57,7 +57,6 @@ export default function EnhancedTableViewer({
   isLoading,
   page,
   onPageChange,
-  onRefresh,
 }: EnhancedTableViewerProps) {
   const [globalSearch, setGlobalSearch] = useState("");
   const [columnFilters, setColumnFilters] = useState<ColumnFilter[]>([]);
@@ -67,7 +66,7 @@ export default function EnhancedTableViewer({
   const [showFilters, setShowFilters] = useState(false);
 
   // Detect data type for each column
-  const getDataType = (value: any): DataType => {
+  const getDataType = (value: unknown): DataType => {
     if (value === null || value === undefined) return "null";
     if (typeof value === "boolean") return "boolean";
     if (typeof value === "number") return "number";
@@ -244,7 +243,7 @@ export default function EnhancedTableViewer({
       URL.revokeObjectURL(url);
     } else if (format === "json") {
       const jsonData = selectedData.map((row) => {
-        const obj: Record<string, any> = {};
+        const obj: Record<string, unknown> = {};
         processedData.columns.forEach((col, index) => {
           obj[col] = row[index];
         });
@@ -263,8 +262,8 @@ export default function EnhancedTableViewer({
     }
   };
 
-  const copyToClipboard = (value: any) => {
-    navigator.clipboard.writeText(String(value || ""));
+  const copyToClipboard = (value: unknown) => {
+    navigator.clipboard.writeText(String(value ?? ""));
   };
 
   const getTypeColor = (type: DataType) => {
@@ -374,7 +373,7 @@ export default function EnhancedTableViewer({
                       ""
                     }
                     onChange={(e) => handleColumnFilter(column, e.target.value)}
-                    size="sm"
+                    size={12}
                   />
                 </div>
               ))}
