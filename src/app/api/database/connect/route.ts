@@ -1,7 +1,30 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Pool } from "pg";
+import mysql from "mysql2/promise";
 
-let connectionPool: Pool | null = null;
+// Global connection pools for different database types
+let postgresPool: Pool | null = null;
+let mysqlPool: mysql.Pool | null = null;
+
+// Helper function to detect database type from connection string
+function getDatabaseType(
+  connectionString: string
+): "postgresql" | "mysql" | "sqlite" {
+  if (
+    connectionString.startsWith("postgresql://") ||
+    connectionString.startsWith("postgres://")
+  ) {
+    return "postgresql";
+  } else if (connectionString.startsWith("mysql://")) {
+    return "mysql";
+  } else if (connectionString.startsWith("sqlite://")) {
+    return "sqlite";
+  }
+  // Default fallback - try to detect from content
+  if (connectionString.includes("mysql")) return "mysql";
+  if (connectionString.includes("postgres")) return "postgresql";
+  return "sqlite";
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -14,30 +37,66 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Close existing connection if any
-    if (connectionPool) {
-      await connectionPool.end();
+    const dbType = getDatabaseType(connectionString);
+
+    // Close existing connections
+    if (postgresPool) {
+      await postgresPool.end();
+      postgresPool = null;
+    }
+    if (mysqlPool) {
+      await mysqlPool.end();
+      mysqlPool = null;
     }
 
-    // Create new connection pool
-    connectionPool = new Pool({
-      connectionString,
-      ssl: {
-        rejectUnauthorized: false,
-      },
-      max: 20,
-      idleTimeoutMillis: 30000,
-      connectionTimeoutMillis: 10000,
-    });
+    if (dbType === "postgresql") {
+      // Create PostgreSQL connection pool
+      postgresPool = new Pool({
+        connectionString,
+        ssl: {
+          rejectUnauthorized: false,
+        },
+        max: 20,
+        idleTimeoutMillis: 30000,
+        connectionTimeoutMillis: 10000,
+      });
 
-    // Test the connection
-    const client = await connectionPool.connect();
-    await client.query("SELECT NOW()");
-    client.release();
+      // Test the connection
+      const client = await postgresPool.connect();
+      await client.query("SELECT NOW()");
+      client.release();
+    } else if (dbType === "mysql") {
+      // Parse MySQL connection string
+      const url = new URL(connectionString);
+
+      mysqlPool = mysql.createPool({
+        host: url.hostname,
+        port: parseInt(url.port) || 3306,
+        user: url.username,
+        password: url.password,
+        database: url.pathname.slice(1), // Remove leading slash
+        ssl: url.searchParams.get("ssl") === "true" ? {} : undefined,
+        connectionLimit: 20,
+      });
+
+      // Test the connection
+      const connection = await mysqlPool.getConnection();
+      await connection.query("SELECT NOW()");
+      connection.release();
+    } else if (dbType === "sqlite") {
+      // SQLite doesn't need server-side connection pooling
+      // The connection will be handled in the query routes
+      return NextResponse.json({
+        success: true,
+        message: "SQLite connection configured",
+        type: "sqlite",
+      });
+    }
 
     return NextResponse.json({
       success: true,
       message: "Connected successfully",
+      type: dbType,
     });
   } catch (error: unknown) {
     console.error("Database connection error:", error);
@@ -52,9 +111,14 @@ export async function POST(request: NextRequest) {
 
 export async function DELETE() {
   try {
-    if (connectionPool) {
-      await connectionPool.end();
-      connectionPool = null;
+    // Close all existing connections
+    if (postgresPool) {
+      await postgresPool.end();
+      postgresPool = null;
+    }
+    if (mysqlPool) {
+      await mysqlPool.end();
+      mysqlPool = null;
     }
     return NextResponse.json({
       success: true,
@@ -71,4 +135,4 @@ export async function DELETE() {
   }
 }
 
-export { connectionPool };
+export { postgresPool, mysqlPool };

@@ -293,36 +293,45 @@ export class PostgreSQLAdapter extends DatabaseAdapter {
 }
 
 export class MySQLAdapter extends DatabaseAdapter {
-  private mockTables: TableInfo[] = [
-    {
-      name: "customers",
-      columns: ["id", "first_name", "last_name", "phone", "address"],
-      rowCount: 320,
-    },
-    {
-      name: "invoices",
-      columns: ["id", "customer_id", "amount", "due_date", "paid"],
-      rowCount: 890,
-    },
-    {
-      name: "inventory",
-      columns: ["id", "item_name", "quantity", "unit_price", "supplier"],
-      rowCount: 156,
-    },
-  ];
-
   async connect(): Promise<boolean> {
-    // Mock connection - in real implementation, this would use a MySQL client
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        this.isConnected = Math.random() > 0.25; // 75% success rate
-        resolve(this.isConnected);
-      }, 800);
-    });
+    try {
+      const response = await fetch("/api/database/connect", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          connectionString: this.connectionString,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (response.ok && result.success) {
+        this.isConnected = true;
+        return true;
+      } else {
+        console.error("Connection failed:", result.error);
+        this.isConnected = false;
+        return false;
+      }
+    } catch (error) {
+      console.error("Connection error:", error);
+      this.isConnected = false;
+      return false;
+    }
   }
 
   async disconnect(): Promise<void> {
-    this.isConnected = false;
+    try {
+      await fetch("/api/database/connect", {
+        method: "DELETE",
+      });
+    } catch (error) {
+      console.error("Disconnect error:", error);
+    } finally {
+      this.isConnected = false;
+    }
   }
 
   async executeQuery(query: string): Promise<QueryResult> {
@@ -330,58 +339,62 @@ export class MySQLAdapter extends DatabaseAdapter {
       throw new Error("Database not connected");
     }
 
-    // Mock query execution
-    return new Promise((resolve, reject) => {
-      setTimeout(() => {
-        if (query.toLowerCase().includes("select")) {
-          const mockData = this.generateMockData(query);
-          resolve(mockData);
-        } else {
-          reject(new Error("Only SELECT queries are supported in demo mode"));
-        }
-      }, 400);
-    });
+    try {
+      const response = await fetch("/api/database/query", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          query,
+          connectionString: this.connectionString,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        return result;
+      } else {
+        throw new Error(result.error || "Query execution failed");
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unknown error";
+      throw new Error(`Query execution failed: ${message}`);
+    }
   }
 
   async getTables(): Promise<TableInfo[]> {
     if (!this.isConnected) {
       throw new Error("Database not connected");
     }
-    return this.mockTables;
+
+    try {
+      const response = await fetch("/api/database/tables", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          connectionString: this.connectionString,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        return result;
+      } else {
+        throw new Error(result.error || "Failed to get tables");
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unknown error";
+      throw new Error(`Failed to get tables: ${message}`);
+    }
   }
 
   async testConnection(): Promise<boolean> {
     return this.connect();
-  }
-
-  private generateMockData(query: string): QueryResult {
-    if (query.toLowerCase().includes("customers")) {
-      return {
-        columns: ["id", "first_name", "last_name", "phone", "address"],
-        values: [
-          [1, "Alice", "Wilson", "555-0101", "123 Main St"],
-          [2, "Charlie", "Brown", "555-0102", "456 Oak Ave"],
-          [3, "Diana", "Prince", "555-0103", "789 Pine Rd"],
-        ],
-        rowCount: 3,
-      };
-    } else if (query.toLowerCase().includes("invoices")) {
-      return {
-        columns: ["id", "customer_id", "amount", "due_date", "paid"],
-        values: [
-          [1, 1, 250.0, "2024-02-15", true],
-          [2, 2, 180.75, "2024-02-20", false],
-          [3, 3, 320.5, "2024-02-25", true],
-        ],
-        rowCount: 3,
-      };
-    } else {
-      return {
-        columns: ["result"],
-        values: [["Query executed successfully"]],
-        rowCount: 1,
-      };
-    }
   }
 }
 
